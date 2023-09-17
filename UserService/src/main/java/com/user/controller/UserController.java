@@ -17,6 +17,7 @@ import com.user.payload.ApiResponse;
 import com.user.service.UserService;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 
 @RestController
 @RequestMapping("/users")
@@ -25,6 +26,8 @@ public class UserController
 	@Autowired
 	private UserService userService;
 	
+	int retrycount = 1;
+
 	@PostMapping()
 	public ResponseEntity<UserDTO> createUser(@RequestBody UserDTO userDTO)
 	{
@@ -34,9 +37,14 @@ public class UserController
 	}
 	
 	@GetMapping("/{userId}")
-	@CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
+	//@CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
+	@Retry(name ="ratingHotelRetry",fallbackMethod = "ratingHotelFallback" )
 	public ResponseEntity<UserDTO> getUser(@PathVariable("userId") String userId)
 	{
+		System.out.println("RetryCount : " + retrycount);
+		
+		retrycount++;
+		
 		 UserDTO user = this.userService.getUser(userId);
 		 
 		 return new ResponseEntity<UserDTO>(user, HttpStatus.OK);
