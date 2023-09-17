@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.user.dto.UserDTO;
+import com.user.payload.ApiResponse;
 import com.user.service.UserService;
+
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @RestController
 @RequestMapping("/users")
@@ -31,6 +34,7 @@ public class UserController
 	}
 	
 	@GetMapping("/{userId}")
+	@CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
 	public ResponseEntity<UserDTO> getUser(@PathVariable("userId") String userId)
 	{
 		 UserDTO user = this.userService.getUser(userId);
@@ -45,4 +49,17 @@ public class UserController
 		 
 		 return new ResponseEntity<List<UserDTO>>(allUsers, HttpStatus.OK);
 	}
+	
+	// fallback method
+	public ResponseEntity<ApiResponse> ratingHotelFallback(String userId, Exception ex)
+	{
+		ApiResponse apiResponse = new ApiResponse();
+		
+		apiResponse.setMessage("Hotel or Rating service is down");
+		apiResponse.setSuccess(true);
+		apiResponse.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+		 
+		return new ResponseEntity<ApiResponse>(apiResponse, HttpStatus.OK);
+	}
+	
 }
